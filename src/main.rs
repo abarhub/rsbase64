@@ -1,4 +1,5 @@
 use std::fs::File;
+use std::io;
 use std::io::BufReader;
 use std::io::Read;
 
@@ -40,7 +41,7 @@ fn get(byte: u8, pos_debut: u8, pos_fin: u8) -> u8 {
     return res;
 }
 
-fn getValeur(byte: u8) -> char {
+fn get_values(byte: u8) -> char {
     assert!(byte < 63);
 
     let array: [char; 64] = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
@@ -50,7 +51,7 @@ fn getValeur(byte: u8) -> char {
     return array[byte as usize];
 }
 
-fn affiche(byte: u8) {
+fn affiche(byte: u8, mut result: &mut Vec<char>) {
     assert!(byte < 63);
 
     // let array: [char; 64] = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
@@ -63,19 +64,20 @@ fn affiche(byte: u8) {
     //println!("{}",array[byte as u32]);
     //println!("{}",s2[2]);
 
-    let c: char = getValeur(byte);
+    let c: char = get_values(byte);
 
     //println!("{}", c);
-    print!("{}", c);
+    // print!("{}", c);
+    result.push(c);
 }
 
-fn main() {
-    // println!("Hello, world!");
-
-    let my_buf = BufReader::new(File::open("./data/test2.txt").unwrap());
+fn base64(//my_buf: BufReader<File>
+          my_buf: impl io::BufRead
+) -> Vec<char> {
     let mut res: u8 = 0;
     let mut len_res = 0;
     let mut no = 0;
+    let mut result = vec![];
     for byte_or_error in my_buf.bytes() {
         assert!(len_res <= 8);
         assert_eq!(len_res % 2, 0);
@@ -119,10 +121,10 @@ fn main() {
         //println!("no={},byte={}({:b}),debut={}({:b}),fin={}({:b}),n={},res={},len={}",
         //         no, byte, byte, debut, debut, fin, fin, n, res, len_res);
 
-        affiche(n);
+        affiche(n, &mut result);
 
         if len_res + 2 == 6 {
-            affiche(fin);
+            affiche(fin, &mut result);
 
             res = 0;
             len_res = 0;
@@ -157,12 +159,15 @@ fn main() {
 
         let n = res2;
 
-        affiche(n);
+        affiche(n, &mut result);
 
         if (len_res == 2) {
-            println!("==");
+            result.push('=');
+            result.push('=');
+            // println!("==");
         } else if (len_res == 1) {
-            println!("=");
+            // println!("=");
+            result.push('=');
         }
 
         // if len_res + 2 == 6 {
@@ -176,13 +181,18 @@ fn main() {
         // }
     }
 
+    return result;
+}
 
-    // let tmp2: u8 = 0b1100_0000;
-    // let tmp3: u8 = 0b1100_0001;
-    // let tmp4: u8 = 0b1110_1001;
-    // println!("test : {:b}, {:b}, {:b}", tmp2, tmp2 >> 6, tmp3 >> 6);
-    // println!("test2 : {:b}, {:b}, {:b}", get(tmp4, 6, 8),
-    //          get(tmp4, 0, 6), get(tmp3, 0, 6));
+fn main() {
+    let my_buf = BufReader::new(File::open("./data/test2.txt").unwrap());
+
+    let result = base64(my_buf);
+
+    for c in result {
+        print!("{}", c);
+    }
+
 }
 
 
@@ -216,5 +226,11 @@ mod tests {
 
         // test 197
         assert_eq!(get2(197u8, 5), (49, 1));
+    }
+
+    #[test]
+    fn test_base64() {
+        // test ' '
+        assert_eq!(base64("a".as_bytes()), vec!['Y', 'Q', '=', '=']);
     }
 }
