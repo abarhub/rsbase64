@@ -130,8 +130,8 @@ fn base64(//my_buf: BufReader<File>
         }
 
         if debug {
-            println!("no={},byte={}({:b}),debut={}({:b}),fin={}({:b}),n={},res={},len={},n={}",
-                     no, byte, byte, debut, debut, fin, fin, n, res, len_res, n);
+            println!("no={},byte={}({:b}),debut={}({:b}),fin={}({:b}),n={},res={},len={},n={}({:b})",
+                     no, byte, byte, debut, debut, fin, fin, n, res, len_res, n, n);
         }
 
         affiche(n, &mut result);
