@@ -3,18 +3,18 @@ use std::io::BufReader;
 use std::io::Read;
 
 
-fn get2(byte: u8, pos: u8)-> (u8,u8) {
+fn get2(byte: u8, pos: u8) -> (u8, u8) {
     assert!(pos < 7);
 
-    let pos2=7-pos;
+    let pos2 = 7 - pos;
 
-    let debut=get(byte,0,pos2-1);
-    let fin=get(byte,pos2,7);
+    let debut = get(byte, 0, pos2 - 1);
+    let fin = get(byte, pos2, 7);
 
     //println!("get2 {:b} -> {:b}, {:b}",byte, debut,fin);
 
     //return (debut,fin);
-    return (fin,debut);
+    return (fin, debut);
 }
 
 /**
@@ -24,7 +24,7 @@ The position is between the less significant bits (right to left)
 get(0b1010101,2,7)=0b0010101
 get(0b1010101,0,2)=0b0000001
 
-*/
+ */
 fn get(byte: u8, pos_debut: u8, pos_fin: u8) -> u8 {
     assert!(pos_debut < pos_fin);
 
@@ -40,19 +40,33 @@ fn get(byte: u8, pos_debut: u8, pos_fin: u8) -> u8 {
     return res;
 }
 
-fn affiche(byte: u8) {
+fn getValeur(byte: u8) -> char {
     assert!(byte < 63);
 
     let array: [char; 64] = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
         'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/'];
 
+    return array[byte as usize];
+}
+
+fn affiche(byte: u8) {
+    assert!(byte < 63);
+
+    // let array: [char; 64] = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+    //     'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+    //     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/'];
+
     // let s2: String = array.iter().collect();
 
     // afficher le caractère
     //println!("{}",array[byte as u32]);
     //println!("{}",s2[2]);
-    print!("{}", array[byte as usize]);
+
+    let c: char = getValeur(byte);
+
+    //println!("{}", c);
+    print!("{}", c);
 }
 
 fn main() {
@@ -61,6 +75,7 @@ fn main() {
     let my_buf = BufReader::new(File::open("./data/test2.txt").unwrap());
     let mut res: u8 = 0;
     let mut len_res = 0;
+    let mut no = 0;
     for byte_or_error in my_buf.bytes() {
         assert!(len_res <= 8);
         assert_eq!(len_res % 2, 0);
@@ -97,9 +112,12 @@ fn main() {
         // let debut = get(byte, 0, 5 - len_res);
         // let fin = get(byte, 6 - len_res, 7);
 
-        let (debut,fin)=get2(byte,5-len_res);
+        let (debut, fin) = get2(byte, 5 - len_res);
 
         let n = res + (debut << len_res);
+
+        //println!("no={},byte={}({:b}),debut={}({:b}),fin={}({:b}),n={},res={},len={}",
+        //         no, byte, byte, debut, debut, fin, fin, n, res, len_res);
 
         affiche(n);
 
@@ -113,43 +131,49 @@ fn main() {
             len_res = (len_res + 2) % 6;
         }
 
+        //println!("no_bis={},res={}({:b})len={}", no, res, res, len_res);
 
-        // } else {
-        //     assert!(false,"valeur invalide");
-        // }
-
-
-        // let n = res;
-
-
-        // res += fin;
-        // len_res += 2;
-
-        // res = (byte & 0b1100_0000);
-        // println!("{:b}, {:b}, {:b}", byte, n, res);
+        no += 1;
 
         assert!(len_res <= 8);
         assert_eq!(len_res % 2, 0);
     }
 
-    if len_res > 0 {
-        // let debut = get(res, 0, 5 - len_res);
-        // let fin = get(res, 6 - len_res, 7);
-        let (debut,fin)=get2(res,5-len_res);
+    //println!("fin boucle res={}({:b})len={}", res, res, len_res);
 
-        let n = debut;
+    if len_res > 0 {
+        let res2;
+        if (len_res < 6) {
+            res2 = res << (6 - len_res);
+        } else {
+            res2 = res;
+        }
+
+        //println!("res2={}({:b})", res2, res2);
+
+        let (debut, fin) = get2(res2, 5 - len_res);
+
+        //println!("debut={}({:b}),fin={}({:b})", debut, debut, fin, fin);
+
+        let n = res2;
 
         affiche(n);
 
-        if len_res + 2 == 6 {
-            affiche(fin);
-
-            res = 0;
-            len_res = 0;
-        } else {
-            res = fin;
-            len_res = (len_res + 2) % 6;
+        if (len_res == 2) {
+            println!("==");
+        } else if (len_res == 1) {
+            println!("=");
         }
+
+        // if len_res + 2 == 6 {
+        //     affiche(fin);
+        //
+        //     res = 0;
+        //     len_res = 0;
+        // } else {
+        //     res = fin;
+        //     len_res = (len_res + 2) % 6;
+        // }
     }
 
 
@@ -185,10 +209,10 @@ mod tests {
     #[test]
     fn test_get2() {
         // test ' '
-        assert_eq!(get2(32, 5),  (8,0));
+        assert_eq!(get2(32, 5), (8, 0));
 
         // test 'a'
-        assert_eq!(get2(97, 5), (24,1));
+        assert_eq!(get2(97, 5), (24, 1));
 
         // test 197
         assert_eq!(get2(197u8, 5), (49, 1));
