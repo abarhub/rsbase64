@@ -1,3 +1,196 @@
+use std::fs::File;
+use std::io::BufReader;
+use std::io::Read;
+
+
+fn get2(byte: u8, pos: u8)-> (u8,u8) {
+    assert!(pos < 7);
+
+    let pos2=7-pos;
+
+    let debut=get(byte,0,pos2-1);
+    let fin=get(byte,pos2,7);
+
+    //println!("get2 {:b} -> {:b}, {:b}",byte, debut,fin);
+
+    //return (debut,fin);
+    return (fin,debut);
+}
+
+/**
+Return the bits of byte between pos_debut and pos_fin.
+The position is between the less significant bits (right to left)
+
+get(0b1010101,2,7)=0b0010101
+get(0b1010101,0,2)=0b0000001
+
+*/
+fn get(byte: u8, pos_debut: u8, pos_fin: u8) -> u8 {
+    assert!(pos_debut < pos_fin);
+
+    let mut res: u8 = byte;
+    if pos_fin < 7 {
+        res <<= 7 - pos_fin;
+        res >>= 7 - pos_fin;
+    }
+    if pos_debut > 0 {
+        res >>= pos_debut;
+    }
+
+    return res;
+}
+
+fn affiche(byte: u8) {
+    assert!(byte < 63);
+
+    let array: [char; 64] = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/'];
+
+    // let s2: String = array.iter().collect();
+
+    // afficher le caractère
+    //println!("{}",array[byte as u32]);
+    //println!("{}",s2[2]);
+    print!("{}", array[byte as usize]);
+}
+
 fn main() {
-    println!("Hello, world!");
+    // println!("Hello, world!");
+
+    let my_buf = BufReader::new(File::open("./data/test2.txt").unwrap());
+    let mut res: u8 = 0;
+    let mut len_res = 0;
+    for byte_or_error in my_buf.bytes() {
+        assert!(len_res <= 8);
+        assert_eq!(len_res % 2, 0);
+
+        // let n:u8 = 0;
+
+        let byte = byte_or_error.unwrap();
+        // let debut = byte & 0b0011_1111;
+        // let fin = (byte & 0b1100_0000) >> 6;
+
+        // if(len_res==0){
+        //     let debut=get(byte,0,5-len_res);
+        //     let fin=get(byte,6-len_res,7);
+        //
+        //     let n = res+(debut<<len_res);
+        //
+        //     // traitement
+        //     affiche(n);
+        //
+        //     res=fin;
+        //     len_res=(len_res+2)%6;
+        // } else if(len_res==2){
+        //     let debut=get(byte,0,5-len_res);
+        //     let fin=get(byte,6-len_res,7);
+        //
+        //     let n = res+(debut<<len_res);
+        //
+        //     affiche(n);
+        //
+        //     res=fin;
+        //     len_res=(len_res+2)%6;
+        //
+        // } else if(len_res==4){
+        // let debut = get(byte, 0, 5 - len_res);
+        // let fin = get(byte, 6 - len_res, 7);
+
+        let (debut,fin)=get2(byte,5-len_res);
+
+        let n = res + (debut << len_res);
+
+        affiche(n);
+
+        if len_res + 2 == 6 {
+            affiche(fin);
+
+            res = 0;
+            len_res = 0;
+        } else {
+            res = fin;
+            len_res = (len_res + 2) % 6;
+        }
+
+
+        // } else {
+        //     assert!(false,"valeur invalide");
+        // }
+
+
+        // let n = res;
+
+
+        // res += fin;
+        // len_res += 2;
+
+        // res = (byte & 0b1100_0000);
+        // println!("{:b}, {:b}, {:b}", byte, n, res);
+
+        assert!(len_res <= 8);
+        assert_eq!(len_res % 2, 0);
+    }
+
+    if len_res > 0 {
+        // let debut = get(res, 0, 5 - len_res);
+        // let fin = get(res, 6 - len_res, 7);
+        let (debut,fin)=get2(res,5-len_res);
+
+        let n = debut;
+
+        affiche(n);
+
+        if len_res + 2 == 6 {
+            affiche(fin);
+
+            res = 0;
+            len_res = 0;
+        } else {
+            res = fin;
+            len_res = (len_res + 2) % 6;
+        }
+    }
+
+
+    // let tmp2: u8 = 0b1100_0000;
+    // let tmp3: u8 = 0b1100_0001;
+    // let tmp4: u8 = 0b1110_1001;
+    // println!("test : {:b}, {:b}, {:b}", tmp2, tmp2 >> 6, tmp3 >> 6);
+    // println!("test2 : {:b}, {:b}, {:b}", get(tmp4, 6, 8),
+    //          get(tmp4, 0, 6), get(tmp3, 0, 6));
+}
+
+
+#[cfg(test)]
+mod tests {
+    // Note this useful idiom: importing names from outer (for mod tests) scope.
+    use super::*;
+
+    #[test]
+    fn test_get() {
+        // test ' '
+        assert_eq!(get(32, 0, 5), 32);
+        assert_eq!(get(32, 6, 7), 0);
+
+        // test 'a'
+        assert_eq!(get(97, 0, 5), 33);
+        assert_eq!(get(97, 6, 7), 1);
+
+        assert_eq!(get(97, 0, 1), 1);
+        assert_eq!(get(97, 2, 7), 24);
+    }
+
+
+    #[test]
+    fn test_get2() {
+        // test ' '
+        assert_eq!(get2(32, 5),  (8,0));
+
+        // test 'a'
+        assert_eq!(get2(97, 5), (24,1));
+
+        // test 197
+        assert_eq!(get2(197u8, 5), (49, 1));
+    }
 }
