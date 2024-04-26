@@ -103,10 +103,11 @@ fn to_number(vect: Vec<bool>) -> u8 {
 }
 
 fn base64(my_buf: impl io::BufRead) -> Vec<char> {
-    let debug = true;
+    // let debug = true;
+    let debug = false;
     // let mut res: u8 = 0;
     // let mut len_res = 0;
-    let mut no = 0;
+    // let mut no = 0;
     // let mut result = vec![];
     let mut result2 = vec![];
     let mut v2 = vec![];
@@ -260,11 +261,14 @@ fn base64(my_buf: impl io::BufRead) -> Vec<char> {
     let mut no = 0;
     let mut nb_affiche = 0;
     while !termine {
+        if debug {
+            println!("no={}", no);
+            println!("v2(len={})={:?}", v2.len(), v2);
+        }
         if v2.len() >= 6 {
             let (debut, fin) = split(v2, 6);
 
             if debug {
-                println!("no={}", no);
                 println!("tmp={:?}", debut);
                 println!("tmp2={:?}", fin);
             }
@@ -279,14 +283,28 @@ fn base64(my_buf: impl io::BufRead) -> Vec<char> {
             nb_affiche += 1;
 
             v2 = fin;
+        } else if v2.len() == 0 {
+            termine = true;
         } else {
             let mut v3: Vec<bool> = v2.clone();
+
+            if debug {
+                println!("v3={:?}", v3);
+            }
 
             while v3.len() < 6 {
                 v3.push(false);
             }
 
+            if debug {
+                println!("v3_bis={:?}", v3);
+            }
+
             let n = to_number(v3);
+
+            if debug {
+                println!("n={}({:b})", n, n);
+            }
 
             affiche(n, &mut result2);
             nb_affiche += 1;
@@ -363,7 +381,18 @@ mod tests {
         assert_eq!(base64("aaa".as_bytes()), vec!['Y', 'W', 'F', 'h']);
 
         // test 'aaaa'
-        assert_eq!(base64("aaaa".as_bytes()), vec!['Y', 'W', 'F', 'h', 'Y', 'Q']);
+        assert_eq!(base64("aaaa".as_bytes()), vec!['Y', 'W', 'F', 'h', 'Y', 'Q', '=', '=']);//
+
+
+        assert_eq!(base64("light work.".as_bytes()), vec!['b', 'G', 'l', 'n', 'a', 'H', 'Q', 'g', 'd', '2', '9', 'y', 'a', 'y', '4', '=']);//bGlnaHQgd29yay4=
+
+        assert_eq!(base64("light work".as_bytes()), vec!['b', 'G', 'l', 'n', 'a', 'H', 'Q', 'g', 'd', '2', '9', 'y', 'a', 'w', '=', '=']);
+
+        assert_eq!(base64("light wor".as_bytes()), vec!['b', 'G', 'l', 'n', 'a', 'H', 'Q', 'g', 'd', '2', '9', 'y']);
+
+        assert_eq!(base64("light wo".as_bytes()), vec!['b', 'G', 'l', 'n', 'a', 'H', 'Q', 'g', 'd', '2', '8', '=']);
+
+        assert_eq!(base64("light w".as_bytes()), vec!['b', 'G', 'l', 'n', 'a', 'H', 'Q', 'g', 'd', 'w', '=', '=']);
     }
 
 
