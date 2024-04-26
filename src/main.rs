@@ -71,17 +71,49 @@ fn affiche(byte: u8, result: &mut Vec<char>) {
     result.push(c);
 }
 
-fn base64(//my_buf: BufReader<File>
-          my_buf: impl io::BufRead
-) -> Vec<char> {
-    let debug = true;
+fn create_vector(byte: u8) -> Vec<bool> {
+    let mut result: Vec<bool> = vec![];
+
+    for i in 0..8 {
+        let b = (byte & (1u8 << i)) > 0;
+        result.push(b);
+    }
+
+    return result.iter().copied().rev().collect();
+}
+
+fn split(vect: Vec<bool>, pos: i8) -> (Vec<bool>, Vec<bool>) {
+    let pos2: usize = (pos) as usize;
+    let a = vect[0..pos2].to_vec();
+    let b = vect[pos2..vect.len()].to_vec();
+
+    assert_eq!(vect.len(), a.len() + b.len());
+    return (a, b);
+}
+
+fn to_number(vect: Vec<bool>) -> u8 {
     let mut res: u8 = 0;
-    let mut len_res = 0;
+    for b in vect {
+        res <<= 1;
+        if b {
+            res += 1;
+        }
+    }
+    return res;
+}
+
+fn base64(my_buf: impl io::BufRead) -> Vec<char> {
+    let debug = true;
+    // let mut res: u8 = 0;
+    // let mut len_res = 0;
     let mut no = 0;
-    let mut result = vec![];
+    // let mut result = vec![];
+    let mut result2 = vec![];
+    let mut v2 = vec![];
+    // let mut len2 = 0;
     for byte_or_error in my_buf.bytes() {
-        assert!(len_res <= 8);
-        assert_eq!(len_res % 2, 0);
+        // assert!(len_res <= 8);
+        // assert_eq!(len_res % 2, 0);
 
         // let n:u8 = 0;
 
@@ -115,100 +147,162 @@ fn base64(//my_buf: BufReader<File>
         // let debut = get(byte, 0, 5 - len_res);
         // let fin = get(byte, 6 - len_res, 7);
 
-        if debug {
-            println!("debut no={},res={}({:b}),len={}",
-                     no, res, res, len_res);
-        }
+        let v = create_vector(byte);
 
-        let (debut, fin) = get2(byte, 5 - len_res);
+        v2 = [v2, v].concat();
 
-        let n;//= res<<(7-len_res) + debut;
-        if res > 0 {
-            n = (res << (6 - len_res)) + debut;
-        } else {
-            n = debut;
-        }
+        // println!("debut v={:?}, byte={}({:b})",
+        //          v, byte, byte);
 
-        if debug {
-            println!("no={},byte={}({:b}),debut={}({:b}),fin={}({:b}),n={},res={},len={},n={}({:b})",
-                     no, byte, byte, debut, debut, fin, fin, n, res, len_res, n, n);
-        }
-
-        affiche(n, &mut result);
-
-        // if len_res + 2 == 6 {
-        //     affiche(fin, &mut result);
-        //
-        //     res = 0;
-        //     len_res = 0;
-        // } else {
-        res = fin;
-        len_res = (len_res + 2) % 6;
+        // if debug {
+        //     println!("debut no={},res={}({:b}),len={}",
+        //              no, res, res, len_res);
         // }
 
-        if debug {
-            println!("no_bis={},res={}({:b})len={}", no, res, res, len_res);
-        }
+        //let (debut2,fin2)=split(v,7-len2);
 
-        no += 1;
+        //let (debut2,fin2)=split(v,6);
 
-        assert!(len_res <= 8);
-        assert_eq!(len_res % 2, 0);
-    }
 
-    if debug {
-        println!("fin boucle res={}({:b})len={}", res, res, len_res);
-    }
-
-    if len_res > 0 {
-        let res2;
-        if len_res < 6 {
-            res2 = res << (6 - len_res);
-        } else {
-            res2 = res;
-        }
-
-        if debug {
-            println!("res2={}({:b})", res2, res2);
-        }
-
-        // let (debut, fin) = get2(res2, 5 - len_res);
-
-        // println!("debut={}({:b}),fin={}({:b})", debut, debut, fin, fin);
-
-        let n = res2;
-
-        affiche(n, &mut result);
-
-        if len_res == 2 {
-            result.push('=');
-            result.push('=');
-            // println!("==");
-        } else if len_res == 1 || len_res == 4 {
-            // println!("=");
-            result.push('=');
-        }
-
-        // if len_res + 2 == 6 {
-        //     affiche(fin);
+        // let (debut, fin) = get2(byte, 5 - len_res);
         //
-        //     res = 0;
-        //     len_res = 0;
+        // let n;//= res<<(7-len_res) + debut;
+        // if res > 0 {
+        //     n = (res << (6 - len_res)) + debut;
         // } else {
-        //     res = fin;
-        //     len_res = (len_res + 2) % 6;
+        //     n = debut;
         // }
-    } else if res > 0 {
-        let n = res;
-
-        affiche(n, &mut result);
+        //
+        // if debug {
+        //     println!("no={},byte={}({:b}),debut={}({:b}),fin={}({:b}),n={},res={},len={},n={}({:b})",
+        //              no, byte, byte, debut, debut, fin, fin, n, res, len_res, n, n);
+        // }
+        //
+        // affiche(n, &mut result);
+        //
+        // // if len_res + 2 == 6 {
+        // //     affiche(fin, &mut result);
+        // //
+        // //     res = 0;
+        // //     len_res = 0;
+        // // } else {
+        // res = fin;
+        // len_res = (len_res + 2) % 6;
+        // // }
+        //
+        // if debug {
+        //     println!("no_bis={},res={}({:b})len={}", no, res, res, len_res);
+        // }
+        //
+        // no += 1;
+        //
+        // assert!(len_res <= 8);
+        // assert_eq!(len_res % 2, 0);
     }
+
+    // if debug {
+    //     println!("fin boucle res={}({:b})len={}", res, res, len_res);
+    // }
+
+    // if len_res > 0 {
+    //     let res2;
+    //     if len_res < 6 {
+    //         res2 = res << (6 - len_res);
+    //     } else {
+    //         res2 = res;
+    //     }
+    //
+    //     if debug {
+    //         println!("res2={}({:b})", res2, res2);
+    //     }
+    //
+    //     // let (debut, fin) = get2(res2, 5 - len_res);
+    //
+    //     // println!("debut={}({:b}),fin={}({:b})", debut, debut, fin, fin);
+    //
+    //     let n = res2;
+    //
+    //     affiche(n, &mut result);
+    //
+    //     if len_res == 2 {
+    //         result.push('=');
+    //         result.push('=');
+    //         // println!("==");
+    //     } else if len_res == 1 || len_res == 4 {
+    //         // println!("=");
+    //         result.push('=');
+    //     }
+    //
+    //     // if len_res + 2 == 6 {
+    //     //     affiche(fin);
+    //     //
+    //     //     res = 0;
+    //     //     len_res = 0;
+    //     // } else {
+    //     //     res = fin;
+    //     //     len_res = (len_res + 2) % 6;
+    //     // }
+    // } else if res > 0 {
+    //     let n = res;
+    //
+    //     affiche(n, &mut result);
+    // }
 
     // while result.len()%3!=0 {
     //     result.push('=');
     // }
 
-    return result;
+    if debug {
+        println!("construction du resultat: v2={:?}", v2);
+    }
+
+    let mut termine = false;
+    let mut no = 0;
+    let mut nb_affiche = 0;
+    while !termine {
+        if v2.len() >= 6 {
+            let (debut, fin) = split(v2, 6);
+
+            if debug {
+                println!("no={}", no);
+                println!("tmp={:?}", debut);
+                println!("tmp2={:?}", fin);
+            }
+
+            let n = to_number(debut);
+
+            if debug {
+                println!("n={}({:b})", n, n);
+            }
+
+            affiche(n, &mut result2);
+            nb_affiche += 1;
+
+            v2 = fin;
+        } else {
+            let mut v3: Vec<bool> = v2.clone();
+
+            while v3.len() < 6 {
+                v3.push(false);
+            }
+
+            let n = to_number(v3);
+
+            affiche(n, &mut result2);
+            nb_affiche += 1;
+
+            termine = true;
+        }
+        no += 1;
+    }
+    if nb_affiche % 4 != 0 {
+        for _ in (nb_affiche % 4)..4 {
+            result2.push('=');
+        }
+    }
+
+    // return result;
+    return result2;
 }
 
 fn main() {
@@ -257,10 +351,10 @@ mod tests {
     #[test]
     fn test_base64() {
         // test 'a'
-        // assert_eq!(base64("a".as_bytes()), vec!['Y', 'Q', '=', '=']);
+        assert_eq!(base64("a".as_bytes()), vec!['Y', 'Q', '=', '=']);
 
         // test 'b'
-        // assert_eq!(base64("b".as_bytes()), vec!['Y', 'g', '=', '=']);
+        assert_eq!(base64("b".as_bytes()), vec!['Y', 'g', '=', '=']);
 
         // test 'aa'
         assert_eq!(base64("aa".as_bytes()), vec!['Y', 'W', 'E', '=']);
@@ -268,8 +362,17 @@ mod tests {
         // test 'aaa'
         assert_eq!(base64("aaa".as_bytes()), vec!['Y', 'W', 'F', 'h']);
 
-
         // test 'aaaa'
         assert_eq!(base64("aaaa".as_bytes()), vec!['Y', 'W', 'F', 'h', 'Y', 'Q']);
+    }
+
+
+    #[test]
+    fn test_split() {
+        assert_eq!(split(vec![true, true, false, true], 2), (vec![true, true], vec![false, true]));
+
+        assert_eq!(split(vec![true, true, false, false, false, false, true, true, true, false, false, false, false, true, true, true, false, false, false, false, true], 6),
+                   (vec![true, true, false, false, false, false],
+                    vec![true, true, true, false, false, false, false, true, true, true, false, false, false, false, true]));
     }
 }
