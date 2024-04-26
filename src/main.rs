@@ -2,6 +2,7 @@ use std::fs::File;
 use std::io;
 use std::io::BufReader;
 
+// let debug=false;
 
 fn get2(byte: u8, pos: u8) -> (u8, u8) {
     assert!(pos < 7);
@@ -51,7 +52,7 @@ fn get_values(byte: u8) -> char {
 }
 
 fn affiche(byte: u8, result: &mut Vec<char>) {
-    assert!(byte < 63);
+    assert!(byte < 63, "byte={}", byte);
 
     // let array: [char; 64] = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
     //     'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
@@ -73,9 +74,10 @@ fn affiche(byte: u8, result: &mut Vec<char>) {
 fn base64(//my_buf: BufReader<File>
           my_buf: impl io::BufRead
 ) -> Vec<char> {
+    let debug = true;
     let mut res: u8 = 0;
     let mut len_res = 0;
-    // let mut no = 0;
+    let mut no = 0;
     let mut result = vec![];
     for byte_or_error in my_buf.bytes() {
         assert!(len_res <= 8);
@@ -113,34 +115,50 @@ fn base64(//my_buf: BufReader<File>
         // let debut = get(byte, 0, 5 - len_res);
         // let fin = get(byte, 6 - len_res, 7);
 
+        if debug {
+            println!("debut no={},res={}({:b}),len={}",
+                     no, res, res, len_res);
+        }
+
         let (debut, fin) = get2(byte, 5 - len_res);
 
-        let n = res + (debut << len_res);
+        let n;//= res<<(7-len_res) + debut;
+        if res > 0 {
+            n = (res << (6 - len_res)) + debut;
+        } else {
+            n = debut;
+        }
 
-        //println!("no={},byte={}({:b}),debut={}({:b}),fin={}({:b}),n={},res={},len={}",
-        //         no, byte, byte, debut, debut, fin, fin, n, res, len_res);
+        if debug {
+            println!("no={},byte={}({:b}),debut={}({:b}),fin={}({:b}),n={},res={},len={},n={}",
+                     no, byte, byte, debut, debut, fin, fin, n, res, len_res, n);
+        }
 
         affiche(n, &mut result);
 
-        if len_res + 2 == 6 {
-            affiche(fin, &mut result);
+        // if len_res + 2 == 6 {
+        //     affiche(fin, &mut result);
+        //
+        //     res = 0;
+        //     len_res = 0;
+        // } else {
+        res = fin;
+        len_res = (len_res + 2) % 6;
+        // }
 
-            res = 0;
-            len_res = 0;
-        } else {
-            res = fin;
-            len_res = (len_res + 2) % 6;
+        if debug {
+            println!("no_bis={},res={}({:b})len={}", no, res, res, len_res);
         }
 
-        //println!("no_bis={},res={}({:b})len={}", no, res, res, len_res);
-
-        // no += 1;
+        no += 1;
 
         assert!(len_res <= 8);
         assert_eq!(len_res % 2, 0);
     }
 
-    //println!("fin boucle res={}({:b})len={}", res, res, len_res);
+    if debug {
+        println!("fin boucle res={}({:b})len={}", res, res, len_res);
+    }
 
     if len_res > 0 {
         let res2;
@@ -150,11 +168,13 @@ fn base64(//my_buf: BufReader<File>
             res2 = res;
         }
 
-        //println!("res2={}({:b})", res2, res2);
+        if debug {
+            println!("res2={}({:b})", res2, res2);
+        }
 
         // let (debut, fin) = get2(res2, 5 - len_res);
 
-        //println!("debut={}({:b}),fin={}({:b})", debut, debut, fin, fin);
+        // println!("debut={}({:b}),fin={}({:b})", debut, debut, fin, fin);
 
         let n = res2;
 
@@ -164,7 +184,7 @@ fn base64(//my_buf: BufReader<File>
             result.push('=');
             result.push('=');
             // println!("==");
-        } else if len_res == 1 {
+        } else if len_res == 1 || len_res == 4 {
             // println!("=");
             result.push('=');
         }
@@ -178,7 +198,15 @@ fn base64(//my_buf: BufReader<File>
         //     res = fin;
         //     len_res = (len_res + 2) % 6;
         // }
+    } else if res > 0 {
+        let n = res;
+
+        affiche(n, &mut result);
     }
+
+    // while result.len()%3!=0 {
+    //     result.push('=');
+    // }
 
     return result;
 }
@@ -229,9 +257,19 @@ mod tests {
     #[test]
     fn test_base64() {
         // test 'a'
-        assert_eq!(base64("a".as_bytes()), vec!['Y', 'Q', '=', '=']);
+        // assert_eq!(base64("a".as_bytes()), vec!['Y', 'Q', '=', '=']);
 
         // test 'b'
-        assert_eq!(base64("b".as_bytes()), vec!['Y', 'g', '=', '=']);
+        // assert_eq!(base64("b".as_bytes()), vec!['Y', 'g', '=', '=']);
+
+        // test 'aa'
+        assert_eq!(base64("aa".as_bytes()), vec!['Y', 'W', 'E', '=']);
+
+        // test 'aaa'
+        assert_eq!(base64("aaa".as_bytes()), vec!['Y', 'W', 'F', 'h']);
+
+
+        // test 'aaaa'
+        assert_eq!(base64("aaaa".as_bytes()), vec!['Y', 'W', 'F', 'h', 'Y', 'Q']);
     }
 }
