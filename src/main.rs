@@ -1,7 +1,6 @@
 use std::fs::File;
 use std::io;
 use std::io::BufReader;
-use std::io::Read;
 
 
 fn get2(byte: u8, pos: u8) -> (u8, u8) {
@@ -51,7 +50,7 @@ fn get_values(byte: u8) -> char {
     return array[byte as usize];
 }
 
-fn affiche(byte: u8, mut result: &mut Vec<char>) {
+fn affiche(byte: u8, result: &mut Vec<char>) {
     assert!(byte < 63);
 
     // let array: [char; 64] = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
@@ -76,7 +75,7 @@ fn base64(//my_buf: BufReader<File>
 ) -> Vec<char> {
     let mut res: u8 = 0;
     let mut len_res = 0;
-    let mut no = 0;
+    // let mut no = 0;
     let mut result = vec![];
     for byte_or_error in my_buf.bytes() {
         assert!(len_res <= 8);
@@ -135,7 +134,7 @@ fn base64(//my_buf: BufReader<File>
 
         //println!("no_bis={},res={}({:b})len={}", no, res, res, len_res);
 
-        no += 1;
+        // no += 1;
 
         assert!(len_res <= 8);
         assert_eq!(len_res % 2, 0);
@@ -145,7 +144,7 @@ fn base64(//my_buf: BufReader<File>
 
     if len_res > 0 {
         let res2;
-        if (len_res < 6) {
+        if len_res < 6 {
             res2 = res << (6 - len_res);
         } else {
             res2 = res;
@@ -153,7 +152,7 @@ fn base64(//my_buf: BufReader<File>
 
         //println!("res2={}({:b})", res2, res2);
 
-        let (debut, fin) = get2(res2, 5 - len_res);
+        // let (debut, fin) = get2(res2, 5 - len_res);
 
         //println!("debut={}({:b}),fin={}({:b})", debut, debut, fin, fin);
 
@@ -161,11 +160,11 @@ fn base64(//my_buf: BufReader<File>
 
         affiche(n, &mut result);
 
-        if (len_res == 2) {
+        if len_res == 2 {
             result.push('=');
             result.push('=');
             // println!("==");
-        } else if (len_res == 1) {
+        } else if len_res == 1 {
             // println!("=");
             result.push('=');
         }
@@ -192,7 +191,6 @@ fn main() {
     for c in result {
         print!("{}", c);
     }
-
 }
 
 
@@ -230,7 +228,10 @@ mod tests {
 
     #[test]
     fn test_base64() {
-        // test ' '
+        // test 'a'
         assert_eq!(base64("a".as_bytes()), vec!['Y', 'Q', '=', '=']);
+
+        // test 'b'
+        assert_eq!(base64("b".as_bytes()), vec!['Y', 'g', '=', '=']);
     }
 }
