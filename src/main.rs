@@ -1,11 +1,28 @@
 use std::fmt::Write;
 use std::fs::File;
 use std::io;
-use std::io::{BufReader};
+use std::io::{BufReader, Stdout};
 
 static ARRAY: [char; 64] = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
     'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/'];
+
+pub trait WriteChar {
+    fn write_char(&mut self, c: char);
+}
+
+impl WriteChar for String {
+    fn write_char(&mut self, c: char) {
+        write!(self, "{}", c).unwrap();
+    }
+}
+
+impl WriteChar for Stdout {
+    fn write_char(&mut self, c: char) {
+        use std::io::Write;
+        write!(self, "{}", c).unwrap();
+    }
+}
 
 fn get_values(byte: u8) -> char {
     assert!(byte < 63);
@@ -13,12 +30,12 @@ fn get_values(byte: u8) -> char {
     return ARRAY[byte as usize];
 }
 
-fn affiche(byte: u8, mut write: impl Write) {
+fn affiche(byte: u8, write: &mut impl WriteChar) {
     assert!(byte < 63, "byte={}", byte);
 
     let c: char = get_values(byte);
 
-    write.write_char(c).unwrap();
+    write.write_char(c);
 }
 
 fn create_vector(byte: u8) -> Vec<bool> {
@@ -52,7 +69,7 @@ fn to_number(vect: Vec<bool>) -> u8 {
     return res;
 }
 
-fn base64(my_buf: impl io::BufRead, mut write: impl Write) {
+fn base64(my_buf: impl io::BufRead, write: &mut impl WriteChar) {
     let debug = false;
     let mut v2 = vec![];
     let mut no = 0;
@@ -71,7 +88,7 @@ fn base64(my_buf: impl io::BufRead, mut write: impl Write) {
             }
             let nb_affiche2: i32;
             let res: Option<Vec<bool>>;
-            (_, nb_affiche2, res) = construit_resultat(debug, &v2, &mut write);
+            (_, nb_affiche2, res) = construit_resultat(debug, &v2, write);
             match res {
                 Some(v) => v2 = v,
                 _ => {}
@@ -94,7 +111,7 @@ fn base64(my_buf: impl io::BufRead, mut write: impl Write) {
         }
         let nb_affiche2: i32;
         let res: Option<Vec<bool>>;
-        (termine, nb_affiche2, res) = construit_resultat(debug, &v2, &mut write);
+        (termine, nb_affiche2, res) = construit_resultat(debug, &v2, write);
         match res {
             Some(v) => v2 = v,
             _ => {}
@@ -104,12 +121,12 @@ fn base64(my_buf: impl io::BufRead, mut write: impl Write) {
     }
     if nb_affiche % 4 != 0 {
         for _ in (nb_affiche % 4)..4 {
-            write.write_char('=').unwrap();
+            write.write_char('=');
         }
     }
 }
 
-fn construit_resultat(debug: bool, v2: &Vec<bool>, mut write: impl Write) -> (bool, i32, Option<Vec<bool>>) {
+fn construit_resultat(debug: bool, v2: &Vec<bool>, write: &mut impl WriteChar) -> (bool, i32, Option<Vec<bool>>) {
     let mut termine = false;
     let mut nb_affiche: i32 = 0;
     let mut res: Option<Vec<bool>> = None;
@@ -127,7 +144,7 @@ fn construit_resultat(debug: bool, v2: &Vec<bool>, mut write: impl Write) -> (bo
             println!("n={}({:b})", n, n);
         }
 
-        affiche(n, &mut write);
+        affiche(n, write);
         nb_affiche += 1;
 
         res = Some(fin);
@@ -154,7 +171,7 @@ fn construit_resultat(debug: bool, v2: &Vec<bool>, mut write: impl Write) -> (bo
             println!("n={}({:b})", n, n);
         }
 
-        affiche(n, &mut write);
+        affiche(n, write);
         nb_affiche += 1;
 
         termine = true;
@@ -165,12 +182,8 @@ fn construit_resultat(debug: bool, v2: &Vec<bool>, mut write: impl Write) -> (bo
 fn main() {
     let my_buf = BufReader::new(File::open("./data/test2.txt").unwrap());
 
-    let mut s = String::new();
-    base64(my_buf, &mut s);
-
-    for c in s.chars() {
-        print!("{}", c);
-    }
+    let mut stdout = io::stdout();
+    base64(my_buf, &mut stdout);
 }
 
 
