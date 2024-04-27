@@ -1,7 +1,7 @@
 use std::fmt::Write;
 use std::fs::File;
-use std::io;
-use std::io::{BufReader, Stdout};
+use std::{env, io};
+use std::io::{BufReader, BufWriter, Stdout};
 
 static ARRAY: [char; 64] = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
     'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
@@ -18,6 +18,13 @@ impl WriteChar for String {
 }
 
 impl WriteChar for Stdout {
+    fn write_char(&mut self, c: char) {
+        use std::io::Write;
+        write!(self, "{}", c).unwrap();
+    }
+}
+
+impl WriteChar for BufWriter<File> {
     fn write_char(&mut self, c: char) {
         use std::io::Write;
         write!(self, "{}", c).unwrap();
@@ -180,10 +187,52 @@ fn construit_resultat(debug: bool, v2: &Vec<bool>, write: &mut impl WriteChar) -
 }
 
 fn main() {
-    let my_buf = BufReader::new(File::open("./data/test2.txt").unwrap());
+    let mut input: Option<&str> = None;
+    let mut output: Option<&str> = None;
+    let args: Vec<String> = env::args().collect();
+    let mut s: String = String::from("");
+    let mut s2: String = String::from("");
 
-    let mut stdout = io::stdout();
-    base64(my_buf, &mut stdout);
+    for arg in args {
+        if arg.starts_with("--input=") {
+            arg[8..].clone_into(&mut s);
+            input = Some(&s);
+        } else if arg.starts_with("--output=") {
+            arg[9..].clone_into(&mut s2);
+            output = Some(&s2);
+        }
+    }
+
+    match input {
+        Some(x) => {
+            let my_buf = BufReader::new(File::open(x).unwrap());
+            match output {
+                Some(y) => {
+                    let f = File::create(y).unwrap();
+                    let mut out = BufWriter::new(f);
+                    base64(my_buf, &mut out);
+                }
+                _ => {
+                    let mut stdout = io::stdout();
+                    base64(my_buf, &mut stdout);
+                }
+            }
+        }
+        _ => {
+            let my_buf = BufReader::new(io::stdin());
+            match output {
+                Some(y) => {
+                    let f = File::create(y).unwrap();
+                    let mut out = BufWriter::new(f);
+                    base64(my_buf, &mut out);
+                }
+                _ => {
+                    let mut stdout = io::stdout();
+                    base64(my_buf, &mut stdout);
+                }
+            }
+        }
+    }
 }
 
 
