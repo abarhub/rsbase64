@@ -82,7 +82,7 @@ fn create_vector(byte: u8) -> Vec<bool> {
     return result.iter().copied().rev().collect();
 }
 
-fn split(vect: Vec<bool>, pos: i8) -> (Vec<bool>, Vec<bool>) {
+fn split(vect: &Vec<bool>, pos: i8) -> (Vec<bool>, Vec<bool>) {
     let pos2: usize = (pos) as usize;
     let a = vect[0..pos2].to_vec();
     let b = vect[pos2..vect.len()].to_vec();
@@ -151,6 +151,8 @@ fn base64(my_buf: impl io::BufRead) -> Vec<char> {
         let v = create_vector(byte);
 
         v2 = [v2, v].concat();
+
+        if v2.len() > 6 {}
 
         // println!("debut v={:?}, byte={}({:b})",
         //          v, byte, byte);
@@ -265,52 +267,14 @@ fn base64(my_buf: impl io::BufRead) -> Vec<char> {
             println!("no={}", no);
             println!("v2(len={})={:?}", v2.len(), v2);
         }
-        if v2.len() >= 6 {
-            let (debut, fin) = split(v2, 6);
-
-            if debug {
-                println!("tmp={:?}", debut);
-                println!("tmp2={:?}", fin);
-            }
-
-            let n = to_number(debut);
-
-            if debug {
-                println!("n={}({:b})", n, n);
-            }
-
-            affiche(n, &mut result2);
-            nb_affiche += 1;
-
-            v2 = fin;
-        } else if v2.len() == 0 {
-            termine = true;
-        } else {
-            let mut v3: Vec<bool> = v2.clone();
-
-            if debug {
-                println!("v3={:?}", v3);
-            }
-
-            while v3.len() < 6 {
-                v3.push(false);
-            }
-
-            if debug {
-                println!("v3_bis={:?}", v3);
-            }
-
-            let n = to_number(v3);
-
-            if debug {
-                println!("n={}({:b})", n, n);
-            }
-
-            affiche(n, &mut result2);
-            nb_affiche += 1;
-
-            termine = true;
+        let nb_affiche2: i32;
+        let res: Option<Vec<bool>>;
+        (termine, nb_affiche2, res) = construit_resultat(debug, &mut result2, &v2);
+        match res {
+            Some(v) => v2 = v,
+            _ => {}
         }
+        nb_affiche += nb_affiche2;
         no += 1;
     }
     if nb_affiche % 4 != 0 {
@@ -319,8 +283,60 @@ fn base64(my_buf: impl io::BufRead) -> Vec<char> {
         }
     }
 
-    // return result;
     return result2;
+}
+
+fn construit_resultat(debug: bool, mut result2: &mut Vec<char>, v2: &Vec<bool>) -> (bool, i32, Option<Vec<bool>>) {
+    let mut termine = false;
+    let mut nb_affiche: i32 = 0;
+    let mut res: Option<Vec<bool>> = None;
+    if v2.len() >= 6 {
+        let (debut, fin) = split(&v2, 6);
+
+        if debug {
+            println!("tmp={:?}", debut);
+            println!("tmp2={:?}", fin);
+        }
+
+        let n = to_number(debut);
+
+        if debug {
+            println!("n={}({:b})", n, n);
+        }
+
+        affiche(n, &mut result2);
+        nb_affiche += 1;
+
+        res = Some(fin);
+    } else if v2.len() == 0 {
+        termine = true;
+    } else {
+        let mut v3: Vec<bool> = v2.clone();
+
+        if debug {
+            println!("v3={:?}", v3);
+        }
+
+        while v3.len() < 6 {
+            v3.push(false);
+        }
+
+        if debug {
+            println!("v3_bis={:?}", v3);
+        }
+
+        let n = to_number(v3);
+
+        if debug {
+            println!("n={}({:b})", n, n);
+        }
+
+        affiche(n, &mut result2);
+        nb_affiche += 1;
+
+        termine = true;
+    }
+    return (termine, nb_affiche, res);
 }
 
 fn main() {
@@ -398,9 +414,9 @@ mod tests {
 
     #[test]
     fn test_split() {
-        assert_eq!(split(vec![true, true, false, true], 2), (vec![true, true], vec![false, true]));
+        assert_eq!(split(&vec![true, true, false, true], 2), (vec![true, true], vec![false, true]));
 
-        assert_eq!(split(vec![true, true, false, false, false, false, true, true, true, false, false, false, false, true, true, true, false, false, false, false, true], 6),
+        assert_eq!(split(&vec![true, true, false, false, false, false, true, true, true, false, false, false, false, true, true, true, false, false, false, false, true], 6),
                    (vec![true, true, false, false, false, false],
                     vec![true, true, true, false, false, false, false, true, true, true, false, false, false, false, true]));
     }
