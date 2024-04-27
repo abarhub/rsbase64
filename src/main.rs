@@ -1,6 +1,7 @@
+use std::fmt::Write;
 use std::fs::File;
 use std::io;
-use std::io::BufReader;
+use std::io::{BufReader};
 
 static ARRAY: [char; 64] = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
     'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
@@ -12,12 +13,12 @@ fn get_values(byte: u8) -> char {
     return ARRAY[byte as usize];
 }
 
-fn affiche(byte: u8, result: &mut Vec<char>) {
+fn affiche(byte: u8, mut write: impl Write) {
     assert!(byte < 63, "byte={}", byte);
 
     let c: char = get_values(byte);
 
-    result.push(c);
+    write.write_char(c).unwrap();
 }
 
 fn create_vector(byte: u8) -> Vec<bool> {
@@ -51,9 +52,8 @@ fn to_number(vect: Vec<bool>) -> u8 {
     return res;
 }
 
-fn base64(my_buf: impl io::BufRead) -> Vec<char> {
+fn base64(my_buf: impl io::BufRead, mut write: impl Write) {
     let debug = false;
-    let mut result2 = vec![];
     let mut v2 = vec![];
     let mut no = 0;
     let mut nb_affiche = 0;
@@ -71,7 +71,7 @@ fn base64(my_buf: impl io::BufRead) -> Vec<char> {
             }
             let nb_affiche2: i32;
             let res: Option<Vec<bool>>;
-            (_, nb_affiche2, res) = construit_resultat(debug, &mut result2, &v2);
+            (_, nb_affiche2, res) = construit_resultat(debug, &v2, &mut write);
             match res {
                 Some(v) => v2 = v,
                 _ => {}
@@ -94,7 +94,7 @@ fn base64(my_buf: impl io::BufRead) -> Vec<char> {
         }
         let nb_affiche2: i32;
         let res: Option<Vec<bool>>;
-        (termine, nb_affiche2, res) = construit_resultat(debug, &mut result2, &v2);
+        (termine, nb_affiche2, res) = construit_resultat(debug, &v2, &mut write);
         match res {
             Some(v) => v2 = v,
             _ => {}
@@ -104,14 +104,12 @@ fn base64(my_buf: impl io::BufRead) -> Vec<char> {
     }
     if nb_affiche % 4 != 0 {
         for _ in (nb_affiche % 4)..4 {
-            result2.push('=');
+            write.write_char('=').unwrap();
         }
     }
-
-    return result2;
 }
 
-fn construit_resultat(debug: bool, mut result2: &mut Vec<char>, v2: &Vec<bool>) -> (bool, i32, Option<Vec<bool>>) {
+fn construit_resultat(debug: bool, v2: &Vec<bool>, mut write: impl Write) -> (bool, i32, Option<Vec<bool>>) {
     let mut termine = false;
     let mut nb_affiche: i32 = 0;
     let mut res: Option<Vec<bool>> = None;
@@ -129,7 +127,7 @@ fn construit_resultat(debug: bool, mut result2: &mut Vec<char>, v2: &Vec<bool>) 
             println!("n={}({:b})", n, n);
         }
 
-        affiche(n, &mut result2);
+        affiche(n, &mut write);
         nb_affiche += 1;
 
         res = Some(fin);
@@ -156,7 +154,7 @@ fn construit_resultat(debug: bool, mut result2: &mut Vec<char>, v2: &Vec<bool>) 
             println!("n={}({:b})", n, n);
         }
 
-        affiche(n, &mut result2);
+        affiche(n, &mut write);
         nb_affiche += 1;
 
         termine = true;
@@ -167,9 +165,10 @@ fn construit_resultat(debug: bool, mut result2: &mut Vec<char>, v2: &Vec<bool>) 
 fn main() {
     let my_buf = BufReader::new(File::open("./data/test2.txt").unwrap());
 
-    let result = base64(my_buf);
+    let mut s = String::new();
+    base64(my_buf, &mut s);
 
-    for c in result {
+    for c in s.chars() {
         print!("{}", c);
     }
 }
@@ -183,32 +182,37 @@ mod tests {
     #[test]
     fn test_base64() {
         // test 'a'
-        assert_eq!(base64("a".as_bytes()), vec!['Y', 'Q', '=', '=']);
+        assert_eq!(base64t("a".as_bytes()), "YQ==");
 
         // test 'b'
-        assert_eq!(base64("b".as_bytes()), vec!['Y', 'g', '=', '=']);
+        assert_eq!(base64t("b".as_bytes()), "Yg==");
 
         // test 'aa'
-        assert_eq!(base64("aa".as_bytes()), vec!['Y', 'W', 'E', '=']);
+        assert_eq!(base64t("aa".as_bytes()), "YWE=");
 
         // test 'aaa'
-        assert_eq!(base64("aaa".as_bytes()), vec!['Y', 'W', 'F', 'h']);
+        assert_eq!(base64t("aaa".as_bytes()), "YWFh");
 
         // test 'aaaa'
-        assert_eq!(base64("aaaa".as_bytes()), vec!['Y', 'W', 'F', 'h', 'Y', 'Q', '=', '=']);//
+        assert_eq!(base64t("aaaa".as_bytes()), "YWFhYQ==");//
 
 
-        assert_eq!(base64("light work.".as_bytes()), vec!['b', 'G', 'l', 'n', 'a', 'H', 'Q', 'g', 'd', '2', '9', 'y', 'a', 'y', '4', '=']);//bGlnaHQgd29yay4=
+        assert_eq!(base64t("light work.".as_bytes()), "bGlnaHQgd29yay4=");
 
-        assert_eq!(base64("light work".as_bytes()), vec!['b', 'G', 'l', 'n', 'a', 'H', 'Q', 'g', 'd', '2', '9', 'y', 'a', 'w', '=', '=']);
+        assert_eq!(base64t("light work".as_bytes()), "bGlnaHQgd29yaw==");
 
-        assert_eq!(base64("light wor".as_bytes()), vec!['b', 'G', 'l', 'n', 'a', 'H', 'Q', 'g', 'd', '2', '9', 'y']);
+        assert_eq!(base64t("light wor".as_bytes()), "bGlnaHQgd29y");
 
-        assert_eq!(base64("light wo".as_bytes()), vec!['b', 'G', 'l', 'n', 'a', 'H', 'Q', 'g', 'd', '2', '8', '=']);
+        assert_eq!(base64t("light wo".as_bytes()), "bGlnaHQgd28=");
 
-        assert_eq!(base64("light w".as_bytes()), vec!['b', 'G', 'l', 'n', 'a', 'H', 'Q', 'g', 'd', 'w', '=', '=']);
+        assert_eq!(base64t("light w".as_bytes()), "bGlnaHQgdw==");
     }
 
+    fn base64t(my_buf: impl io::BufRead) -> String {
+        let mut s = String::new();
+        base64(my_buf, &mut s);
+        return s;
+    }
 
     #[test]
     fn test_split() {
