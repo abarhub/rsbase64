@@ -76,71 +76,22 @@ fn to_number(vect: Vec<bool>) -> u8 {
     return res;
 }
 
+fn base64_bis2(my_buf: impl io::BufRead, write: &mut impl WriteChar) {
+    let methode = false;
+    if methode {
+        base64(my_buf, write);
+    } else {
+        base64_bis(my_buf, write);
+    }
+}
+
 fn base64_bis(my_buf: impl io::BufRead, write: &mut impl WriteChar) {
-    let debug = true;
-    let mut i = 0;
-    let mut rest = 0;
-    //let mut vect: Vec<char> = vec![];
-    let mut taille_rest = 0;
+    let debug = false;
     let mut calcul = Calcul { rest: 0, i: 0, fin: false, debug };
     for byte_or_error in my_buf.bytes() {
         let byte = byte_or_error.unwrap();
 
         calcul.calcul(byte, write);
-        /*if debug {
-            println!("* i={},byte={}/{:#08b},rest={}/{:#08b}", i, byte, byte, rest, rest);
-        }
-
-        if i == 0 {
-            let a = byte >> 2;
-            let b = byte & 0b11;
-            rest = b;
-            taille_rest=2;
-            if debug {
-                println!("a={}/{:#08b},b={}/{:#08b},rest={}/{:#08b}", a, a, b, b, rest, rest);
-            }
-            let c = ARRAY[a as usize];
-            if debug {
-                println!("c={}", c);
-            }
-            //vect.push(c);
-            write.write_char(c);
-        } else if i == 1 {
-            let a = byte >> 4;
-            let b = byte & 0b1111;
-            let x = (rest << 4) + a;
-            rest = b;
-            taille_rest=4;
-            if debug {
-                println!("a={}/{:#08b},b={}/{:#08b},x={}/{:#08b},rest={}/{:#08b}",
-                         a, a, b, b, x, x, rest, rest);
-            }
-            let c = ARRAY[x as usize];
-            if debug {
-                println!("c={}", c);
-            }
-            //vect.push(c);
-            write.write_char(c);
-        } else if i == 2 {
-            let a = byte >> 6;
-            let b = byte & 0b111111;
-            let x = (rest << 2) + a;
-            rest = 0;
-            taille_rest=0;
-            if debug {
-                println!("a={}/{:#08b},b={}/{:#08b},x={}/{:#08b},rest={}/{:#08b}",
-                         a, a, b, b, x, x, rest, rest);
-            }
-            let c = ARRAY[x as usize];
-            let c2 = ARRAY[b as usize];
-            if debug {
-                println!("c={},c2={}", c, c2);
-            }
-            //vect.push(c);
-            write.write_char(c);
-            write.write_char(c2);
-        }
-        i = (i + 1) % 3;*/
     }
 
     calcul.calcul_fin(write);
@@ -174,7 +125,6 @@ impl Calcul64 for Calcul {
             let a = byte >> 2;
             let b = byte & 0b11;
             self.rest = b;
-            // taille_rest=2;
             if debug {
                 println!("a={}/{:#08b},b={}/{:#08b},rest={}/{:#08b}", a, a, b, b, self.rest, self.rest);
             }
@@ -182,14 +132,12 @@ impl Calcul64 for Calcul {
             if debug {
                 println!("c={}", c);
             }
-            //vect.push(c);
             write.write_char(c);
         } else if self.i == 1 {
             let a = byte >> 4;
             let b = byte & 0b1111;
             let x = (self.rest << 4) + a;
             self.rest = b;
-            //taille_rest=4;
             if debug {
                 println!("a={}/{:#08b},b={}/{:#08b},x={}/{:#08b},rest={}/{:#08b}",
                          a, a, b, b, x, x, self.rest, self.rest);
@@ -198,14 +146,12 @@ impl Calcul64 for Calcul {
             if debug {
                 println!("c={}", c);
             }
-            //vect.push(c);
             write.write_char(c);
         } else if self.i == 2 {
             let a = byte >> 6;
             let b = byte & 0b111111;
             let x = (self.rest << 2) + a;
             self.rest = 0;
-            //taille_rest=0;
             if debug {
                 println!("a={}/{:#08b},b={}/{:#08b},x={}/{:#08b},rest={}/{:#08b}",
                          a, a, b, b, x, x, self.rest, self.rest);
@@ -215,9 +161,8 @@ impl Calcul64 for Calcul {
             if debug {
                 println!("c={},c2={}", c, c2);
             }
-            //vect.push(c);
             write.write_char(c);
-            if (!fin) {
+            if !fin {
                 write.write_char(c2);
             }
         }
@@ -229,23 +174,13 @@ impl Calcul64 for Calcul {
         if debug {
             println!("fin: i={}", self.i);
         }
-        // while(self.i!=0){
-        //     self.calcul(u8::try_from('=').unwrap(), write);
-        // }
-        if (self.i == 1) {
+        if self.i == 1 {
             self.calcul(0, write);
             write.write_char('=');
             write.write_char('=');
-            //write.write_char('=');
-        } else if (self.i == 2) {
+        } else if self.i == 2 {
             self.calcul0(0, write, true);
             write.write_char('=');
-            // let x = self.rest ;
-            // let c = ARRAY[x as usize];
-            // write.write_char(c);
-            // write.write_char('=');
-            //write.write_char('=');
-            //self.calcul(u8::try_from('=').unwrap(), write);
         }
         self.fin = true;
     }
@@ -385,11 +320,11 @@ fn main() {
                 Some(y) => {
                     let f = File::create(y).unwrap();
                     let mut out = BufWriter::new(f);
-                    base64(my_buf, &mut out);
+                    base64_bis2(my_buf, &mut out);
                 }
                 _ => {
                     let mut stdout = io::stdout();
-                    base64(my_buf, &mut stdout);
+                    base64_bis2(my_buf, &mut stdout);
                 }
             }
         }
@@ -399,11 +334,11 @@ fn main() {
                 Some(y) => {
                     let f = File::create(y).unwrap();
                     let mut out = BufWriter::new(f);
-                    base64(my_buf, &mut out);
+                    base64_bis2(my_buf, &mut out);
                 }
                 _ => {
                     let mut stdout = io::stdout();
-                    base64(my_buf, &mut stdout);
+                    base64_bis2(my_buf, &mut stdout);
                 }
             }
         }
