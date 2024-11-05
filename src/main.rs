@@ -112,6 +112,7 @@ struct Calcul {
 
 impl Calcul64 for Calcul {
     fn calcul(&mut self, byte: u8, write: &mut impl WriteChar) {
+        assert!(!self.fin, "x wasn't true!");
         self.calcul0(byte, write, false);
     }
 
