@@ -303,6 +303,8 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let mut s: String = String::from("");
     let mut s2: String = String::from("");
+    let mut s3: String = String::from("");
+    let mut buffer_size: Option<u32> = None;
 
     for arg in args {
         if arg.starts_with("--input=") {
@@ -311,6 +313,10 @@ fn main() {
         } else if arg.starts_with("--output=") {
             arg[9..].clone_into(&mut s2);
             output = Some(&s2);
+        } else if arg.starts_with("--bufferSize=") {
+            arg[13..].clone_into(&mut s3);
+            let my_int = s3.parse::<u32>().unwrap();
+            buffer_size = Some(my_int);
         }
     }
 
@@ -320,7 +326,12 @@ fn main() {
             match output {
                 Some(y) => {
                     let f = File::create(y).unwrap();
-                    let mut out = BufWriter::new(f);
+                    let mut out: BufWriter<File>;
+                    if buffer_size.is_none() {
+                        out = BufWriter::new(f);
+                    } else {
+                        out = BufWriter::with_capacity(buffer_size.unwrap() as usize, f);
+                    }
                     base64_bis2(my_buf, &mut out);
                 }
                 _ => {
@@ -334,7 +345,12 @@ fn main() {
             match output {
                 Some(y) => {
                     let f = File::create(y).unwrap();
-                    let mut out = BufWriter::new(f);
+                    let mut out: BufWriter<File>;
+                    if buffer_size.is_none() {
+                        out = BufWriter::new(f);
+                    } else {
+                        out = BufWriter::with_capacity(buffer_size.unwrap() as usize, f);
+                    }
                     base64_bis2(my_buf, &mut out);
                 }
                 _ => {
