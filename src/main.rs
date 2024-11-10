@@ -42,18 +42,22 @@ fn base64_bis2(mut my_buf: impl io::BufRead, write: &mut impl WriteChar, length:
         fin: false,
         debug,
     };
-    let size0:u32;
-    if length.is_some() {
-        size0= length.unwrap() as u32;
-    } else {
-        size0=4096*32;
-    }
-    const SIZE:usize=4096*32;
-    let mut buf = vec![0u8; size0 as usize];
 
-    if false {
-        while let Ok(_) = my_buf.read_exact(&mut buf) {
-            for byte_or_error in buf.iter() {
+    if true {
+        let size0: u32;
+        if length.is_some() {
+            size0 = length.unwrap();
+        } else {
+            size0 = 4096 * 32;
+        }
+        const SIZE: usize = 4096 * 32;
+        let mut buf = vec![0u8; size0 as usize];
+        //let mut buf = [0u8; SIZE as usize];
+        while let Ok(nb) = my_buf.read(&mut buf) {
+            if nb==0 {
+                break;
+            }
+            for byte_or_error in buf[..nb].iter() {
                 let byte = byte_or_error;
 
                 calcul.calcul(*byte, write);
